@@ -1,0 +1,232 @@
+"""
+TrOCR model wrapper for Swedish handwriting recognition.
+"""
+
+from typing import Optional, Dict
+import torch
+import torch.nn as nn
+from transformers import (
+    VisionEncoderDecoderModel,
+    TrOCRProcessor,
+    AutoTokenizer,
+    AutoFeatureExtractor,
+)
+
+from .config import ModelConfig
+
+
+class TrOCRForHTR(nn.Module):
+    """
+    TrOCR model wrapper for handwritten text recognition.
+
+    Wraps the HuggingFace VisionEncoderDecoderModel with utilities
+    for Swedish handwriting recognition.
+    """
+
+    def __init__(
+        self,
+        model_name: str = "microsoft/trocr-base-handwritten",
+        config: Optional[ModelConfig] = None,
+        pretrained: bool = True,
+    ):
+        """
+        Initialize TrOCR model.
+
+        Args:
+            model_name: HuggingFace model name or path
+            config: Model configuration
+            pretrained: Whether to load pretrained weights
+        """
+        super().__init__()
+
+        self.model_name = model_name
+        self.config = config or ModelConfig()
+
+        # Load model
+        if pretrained:
+            self.model = VisionEncoderDecoderModel.from_pretrained(model_name)
+        else:
+            # Initialize from config (random weights)
+            from transformers import VisionEncoderDecoderConfig
+            vision_config = VisionEncoderDecoderConfig.from_encoder_decoder_configs(
+                encoder_config=None,
+                decoder_config=None,
+            )
+            self.model = VisionEncoderDecoderModel(vision_config)
+
+        # Set model config parameters
+        self.model.config.decoder_start_token_id = self.config.bos_token_id
+        self.model.config.pad_token_id = self.config.pad_token_id
+        self.model.config.eos_token_id = self.config.eos_token_id
+
+        # Enable gradient checkpointing for memory efficiency
+        self.model.encoder.gradient_checkpointing = True
+
+    def forward(
+        self,
+        pixel_values: torch.Tensor,
+        labels: Optional[torch.Tensor] = None,
+    ) -> Dict[str, torch.Tensor]:
+        """
+        Forward pass.
+
+        Args:
+            pixel_values: Batch of images [batch_size, 3, height, width]
+            labels: Batch of target sequences [batch_size, seq_len]
+
+        Returns:
+            Dict with 'loss' and 'logits'
+        """
+        outputs = self.model(
+            pixel_values=pixel_values,
+            labels=labels,
+        )
+
+        return {
+            'loss': outputs.loss if labels is not None else None,
+            'logits': outputs.logits,
+        }
+
+    def generate(
+        self,
+        pixel_values: torch.Tensor,
+        max_length: int = 128,
+        num_beams: int = 4,
+        early_stopping: bool = True,
+    ) -> torch.Tensor:
+        """
+        Generate text predictions.
+
+        Args:
+            pixel_values: Batch of images
+            max_length: Maximum sequence length
+            num_beams: Number of beams for beam search
+            early_stopping: Whether to stop when all beams finish
+
+        Returns:
+            Generated token IDs [batch_size, seq_len]
+        """
+        outputs = self.model.generate(
+            pixel_values,
+            max_length=max_length,
+            num_beams=num_beams,
+            early_stopping=early_stopping,
+        )
+
+        return outputs
+
+    def save_pretrained(self, save_path: str):
+        """Save model to disk."""
+        self.model.save_pretrained(save_path)
+
+    @classmethod
+    def from_pretrained(cls, model_path: str):
+        """Load model from disk."""
+        model = cls(model_name=model_path, pretrained=True)
+        return model
+
+
+def create_processor(model_name: str = "microsoft/trocr-base-handwritten") -> TrOCRProcessor:
+    """
+    Create TrOCR processor for image and text processing.
+
+    Args:
+        model_name: HuggingFace model name
+
+    Returns:
+        TrOCRProcessor instance
+    """
+    processor = TrOCRProcessor.from_pretrained(model_name)
+    return processor
+
+
+def setup_model_and_processor(
+    model_name: str = "microsoft/trocr-base-handwritten",
+    config: Optional[ModelConfig] = None,
+    device: str = "cuda",
+) -> tuple:
+    """
+    Setup model and processor.
+
+    Args:
+        model_name: HuggingFace model name
+        config: Model configuration
+        device: Device to load model on
+
+    Returns:
+        Tuple of (model, processor)
+    """
+    # Create processor
+    processor = create_processor(model_name)
+
+    # Create model
+    model = TrOCRForHTR(
+        model_name=model_name,
+        config=config,
+        pretrained=True,
+    )
+
+    # Move to device
+    model = model.to(device)
+
+    return model, processor
+
+
+def count_parameters(model: nn.Module) -> int:
+    """
+    Count trainable parameters in model.
+
+    Args:
+        model: PyTorch model
+
+    Returns:
+        Number of trainable parameters
+    """
+    return sum(p.numel() for p in model.parameters() if p.requires_grad)
+
+
+def freeze_encoder(model: TrOCRForHTR):
+    """
+    Freeze encoder parameters for faster fine-tuning.
+
+    Args:
+        model: TrOCR model
+    """
+    for param in model.model.encoder.parameters():
+        param.requires_grad = False
+
+    print("Encoder frozen. Only decoder will be trained.")
+
+
+def unfreeze_encoder(model: TrOCRForHTR):
+    """
+    Unfreeze encoder parameters.
+
+    Args:
+        model: TrOCR model
+    """
+    for param in model.model.encoder.parameters():
+        param.requires_grad = True
+
+    print("Encoder unfrozen. Full model will be trained.")
+
+
+if __name__ == '__main__':
+    # Test model creation
+    print("Creating TrOCR model...")
+    model = TrOCRForHTR()
+
+    total_params = count_parameters(model)
+    print(f"Total trainable parameters: {total_params:,}")
+
+    # Test forward pass
+    batch_size = 2
+    pixel_values = torch.randn(batch_size, 3, 384, 384)
+    labels = torch.randint(0, 50265, (batch_size, 32))
+
+    print("\nTesting forward pass...")
+    outputs = model(pixel_values=pixel_values, labels=labels)
+    print(f"Loss: {outputs['loss']}")
+    print(f"Logits shape: {outputs['logits'].shape}")
+
+    print("\nModel setup successful!")
