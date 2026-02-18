@@ -2,12 +2,12 @@
 #SBATCH -A naiss2026-4-110
 #SBATCH -p alvis
 #SBATCH -N 1
-#SBATCH --gpus-per-node=A40:1
+#SBATCH --gpus-per-node=A40:4
 #SBATCH -t 1-00:00:00
 #SBATCH --output=logs/%j.log
 
 #
-# Training script for HTR model on 4 A100 GPUs
+# Training script for HTR model on 4 A40 GPUs
 #
 # Usage:
 #   sbatch scripts/train.sh              # Full training
@@ -21,7 +21,7 @@ DATA_DIR="/mimer/NOBACKUP/groups/studentessays/200essays"
 
 # Default values
 DEBUG=""
-NUM_GPUS=1
+NUM_GPUS=4
 EPOCHS=50
 BATCH_SIZE=8
 OUTPUT_DIR="${PROJECT_DIR}/outputs"

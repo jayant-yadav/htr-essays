@@ -66,6 +66,7 @@ class TrOCRForHTR(nn.Module):
         self,
         pixel_values: torch.Tensor,
         labels: Optional[torch.Tensor] = None,
+        **kwargs
     ) -> Dict[str, torch.Tensor]:
         """
         Forward pass.
@@ -73,6 +74,7 @@ class TrOCRForHTR(nn.Module):
         Args:
             pixel_values: Batch of images [batch_size, 3, height, width]
             labels: Batch of target sequences [batch_size, seq_len]
+            **kwargs: Additional arguments to pass to the model
 
         Returns:
             Dict with 'loss' and 'logits'
@@ -80,6 +82,7 @@ class TrOCRForHTR(nn.Module):
         outputs = self.model(
             pixel_values=pixel_values,
             labels=labels,
+            **kwargs
         )
 
         return {

@@ -125,6 +125,29 @@ class HTRTrainer(Trainer):
         super().__init__(*args, **kwargs)
         self.processor = processor
 
+    def save_model(self, output_dir=None, _internal_call=False):
+        """
+        Save the model using PyTorch format to avoid safetensors shared tensor issues.
+        """
+        if output_dir is None:
+            output_dir = self.args.output_dir
+
+        os.makedirs(output_dir, exist_ok=True)
+
+        # Save the model directly with torch.save to avoid safetensors
+        model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
+        torch.save(model_to_save.state_dict(), os.path.join(output_dir, 'pytorch_model.bin'))
+
+        # Save the config
+        if hasattr(model_to_save, 'config'):
+            model_to_save.config.save_pretrained(output_dir)
+
+        # Save the processor
+        if hasattr(self, 'processor') and self.processor is not None:
+            self.processor.save_pretrained(output_dir)
+
+        print(f"Model saved to {output_dir}")
+
 
 class CERMetricCallback(TrainerCallback):
     """
@@ -237,6 +260,7 @@ def create_training_arguments(config) -> TrainingArguments:
         report_to=config.report_to,
         lr_scheduler_type=config.lr_scheduler_type,
         seed=config.seed,
+        ddp_find_unused_parameters=True,  # Allow unused parameters in distributed training
     )
 
     return args
