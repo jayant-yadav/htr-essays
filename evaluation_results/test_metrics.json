@@ -1,0 +1,118 @@
+{
+  "overall_metrics": {
+    "cer": 0.04413573839089811,
+    "cer_std": 0.06389920224322793,
+    "cer_median": 0.02564102564102564,
+    "wer": 0.16424719765754886,
+    "wer_std": 0.2026374500165151,
+    "wer_median": 0.125,
+    "normalized_cer": 0.03970771465320593,
+    "normalized_wer": 0.1433617368460252,
+    "sequence_accuracy": 0.36414048059149723,
+    "total_samples": 541
+  },
+  "per_year_metrics": {
+    "2000": {
+      "cer": 0.04693902351144585,
+      "cer_std": 0.0659089919814118,
+      "cer_median": 0.02702702702702703,
+      "wer": 0.17640589569160994,
+      "wer_std": 0.22193444564749135,
+      "wer_median": 0.125,
+      "normalized_cer": 0.042915779145018526,
+      "normalized_wer": 0.1617913832199546,
+      "sequence_accuracy": 0.363265306122449,
+      "total_samples": 245
+    },
+    "2018": {
+      "cer": 0.06389731504956786,
+      "cer_std": 0.0915472180635708,
+      "cer_median": 0.034482758620689655,
+      "wer": 0.18467396800730132,
+      "wer_std": 0.2047987852054578,
+      "wer_median": 0.125,
+      "normalized_cer": 0.062448752925286115,
+      "normalized_wer": 0.1745573699277403,
+      "sequence_accuracy": 0.2962962962962963,
+      "total_samples": 81
+    },
+    "2012": {
+      "cer": 0.03751948318737404,
+      "cer_std": 0.04068120030167048,
+      "cer_median": 0.025,
+      "wer": 0.13978767264481548,
+      "wer_std": 0.1527114702306418,
+      "wer_median": 0.125,
+      "normalized_cer": 0.02976083175030915,
+      "normalized_wer": 0.09795093795093794,
+      "sequence_accuracy": 0.4,
+      "total_samples": 35
+    },
+    "2006": {
+      "cer": 0.032713940436658664,
+      "cer_std": 0.04405393106134411,
+      "cer_median": 0.02127659574468085,
+      "wer": 0.14326183076183077,
+      "wer_std": 0.17893602366613576,
+      "wer_median": 0.1111111111111111,
+      "normalized_cer": 0.02704183132581041,
+      "normalized_wer": 0.11306878306878307,
+      "sequence_accuracy": 0.3888888888888889,
+      "total_samples": 180
+    }
+  },
+  "error_analysis": {
+    "swedish_char_analysis": {
+      "\u00e5": {
+        "count_in_reference": 334,
+        "count_in_prediction": 343,
+        "difference": 9
+      },
+      "\u00e4": {
+        "count_in_reference": 411,
+        "count_in_prediction": 409,
+        "difference": 2
+      },
+      "\u00f6": {
+        "count_in_reference": 194,
+        "count_in_prediction": 197,
+        "difference": 3
+      },
+      "\u00c5": {
+        "count_in_reference": 1,
+        "count_in_prediction": 0,
+        "difference": 1
+      },
+      "\u00c4": {
+        "count_in_reference": 3,
+        "count_in_prediction": 3,
+        "difference": 0
+      }
+    },
+    "total_errors": 344,
+    "perfect_predictions": 197,
+    "character_error_counts": {
+      "substitutions": 556,
+      "deletions": 188,
+      "insertions": 116,
+      "hits": 18680
+    },
+    "word_error_counts": {
+      "substitutions": 507,
+      "deletions": 47,
+      "insertions": 31,
+      "hits": 3210
+    }
+  },
+  "args": {
+    "checkpoint": "outputs/final_model",
+    "data_dir": "/mimer/NOBACKUP/groups/studentessays/200essays",
+    "annotations_file": "/mimer/NOBACKUP/groups/studentessays/200essays/json_full.json",
+    "split_file": "data_splits.json",
+    "split": "test",
+    "output_dir": "/mimer/NOBACKUP/groups/studentessays/htr-essays/evaluation_results",
+    "batch_size": 16,
+    "num_beams": 4,
+    "save_predictions": true
+  }
+}

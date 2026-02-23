@@ -2,8 +2,8 @@
 #SBATCH -A naiss2026-4-110
 #SBATCH -p alvis
 #SBATCH -N 1
-#SBATCH --gpus-per-node=A40:4
-#SBATCH -t 1-00:00:00
+#SBATCH --gpus-per-node=A40:1
+#SBATCH -t 00:10:00
 #SBATCH --output=logs/evaluate/%j.log
 
 # Evaluation script for HTR model

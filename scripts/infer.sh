@@ -1,5 +1,11 @@
-#!/bin/bash
-#
+#!/usr/bin/env bash
+#SBATCH -A naiss2026-4-110
+#SBATCH -p alvis
+#SBATCH -N 1
+#SBATCH --gpus-per-node=A40:1
+#SBATCH -t 00:10:00
+#SBATCH --output=logs/infer/%j.log
+
 # Inference script for HTR model
 #
 # Usage:
@@ -8,8 +14,8 @@
 #
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+SCRIPT_DIR="/mimer/NOBACKUP/groups/studentessays/htr-essays/scripts"
+PROJECT_DIR="/mimer/NOBACKUP/groups/studentessays/htr-essays"
 
 CHECKPOINT="${1:-outputs/final_model}"
 shift
@@ -27,6 +33,8 @@ if [ ! -d "$CHECKPOINT" ]; then
     echo "ERROR: Checkpoint directory not found: $CHECKPOINT"
     exit 1
 fi
+
+module load poetry
 
 # Run inference
 cd "$PROJECT_DIR"
