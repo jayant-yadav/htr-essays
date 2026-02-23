@@ -1,5 +1,5 @@
 """
-TrOCR model wrapper for Swedish handwriting recognition.
+TrOCR model utilities for Swedish handwriting recognition.
 """
 
 from typing import Optional, Dict
@@ -7,60 +7,76 @@ import torch
 import torch.nn as nn
 from transformers import (
     VisionEncoderDecoderModel,
+    VisionEncoderDecoderConfig,
     TrOCRProcessor,
-    AutoTokenizer,
-    AutoFeatureExtractor,
 )
 
 from .config import ModelConfig
 
 
-class TrOCRForHTR(nn.Module):
+class TrOCRForHTR(VisionEncoderDecoderModel):
     """
     TrOCR model wrapper for handwritten text recognition.
 
-    Wraps the HuggingFace VisionEncoderDecoderModel with utilities
-    for Swedish handwriting recognition.
+    Hugging Face VisionEncoderDecoderModel with HTR-specific defaults.
     """
 
     def __init__(
         self,
-        model_name: str = "microsoft/trocr-base-handwritten",
-        config: Optional[ModelConfig] = None,
-        pretrained: bool = True,
+        config: VisionEncoderDecoderConfig,
+        htr_config: Optional[ModelConfig] = None,
     ):
         """
         Initialize TrOCR model.
 
         Args:
-            model_name: HuggingFace model name or path
-            config: Model configuration
-            pretrained: Whether to load pretrained weights
+            config: HuggingFace VisionEncoderDecoderConfig
+            htr_config: HTR-specific model configuration
         """
-        super().__init__()
-
-        self.model_name = model_name
-        self.config = config or ModelConfig()
-
-        # Load model
-        if pretrained:
-            self.model = VisionEncoderDecoderModel.from_pretrained(model_name)
-        else:
-            # Initialize from config (random weights)
-            from transformers import VisionEncoderDecoderConfig
-            vision_config = VisionEncoderDecoderConfig.from_encoder_decoder_configs(
-                encoder_config=None,
-                decoder_config=None,
-            )
-            self.model = VisionEncoderDecoderModel(vision_config)
+        super().__init__(config)
+        self.htr_config = htr_config or ModelConfig()
 
         # Set model config parameters
-        self.model.config.decoder_start_token_id = self.config.bos_token_id
-        self.model.config.pad_token_id = self.config.pad_token_id
-        self.model.config.eos_token_id = self.config.eos_token_id
+        self.config.decoder_start_token_id = self.htr_config.bos_token_id
+        self.config.pad_token_id = self.htr_config.pad_token_id
+        self.config.eos_token_id = self.htr_config.eos_token_id
 
         # Enable gradient checkpointing for memory efficiency
-        self.model.encoder.gradient_checkpointing = True
+        self.gradient_checkpointing_enable()
+
+    @classmethod
+    def create(
+        cls,
+        model_name: str = "microsoft/trocr-base-handwritten",
+        htr_config: Optional[ModelConfig] = None,
+    ) -> "TrOCRForHTR":
+        """
+        Create model from a pretrained checkpoint.
+
+        Args:
+            model_name: HuggingFace model name or path
+            htr_config: HTR-specific model configuration
+
+        Returns:
+            TrOCRForHTR instance loaded from pretrained weights
+        """
+        return cls.from_pretrained(model_name, htr_config=htr_config)
+
+    @classmethod
+    def create_from_scratch(
+        cls,
+        encoder_config,
+        decoder_config,
+        htr_config: Optional[ModelConfig] = None,
+    ) -> "TrOCRForHTR":
+        """
+        Create model from encoder/decoder configs with random weights.
+        """
+        config = VisionEncoderDecoderConfig.from_encoder_decoder_configs(
+            encoder_config=encoder_config,
+            decoder_config=decoder_config,
+        )
+        return cls(config, htr_config=htr_config)
 
     def forward(
         self,
@@ -79,7 +95,7 @@ class TrOCRForHTR(nn.Module):
         Returns:
             Dict with 'loss' and 'logits'
         """
-        outputs = self.model(
+        outputs = super().forward(
             pixel_values=pixel_values,
             labels=labels,
             **kwargs
@@ -109,7 +125,7 @@ class TrOCRForHTR(nn.Module):
         Returns:
             Generated token IDs [batch_size, seq_len]
         """
-        outputs = self.model.generate(
+        outputs = super().generate(
             pixel_values,
             max_length=max_length,
             num_beams=num_beams,
@@ -117,16 +133,6 @@ class TrOCRForHTR(nn.Module):
         )
 
         return outputs
-
-    def save_pretrained(self, save_path: str):
-        """Save model to disk."""
-        self.model.save_pretrained(save_path)
-
-    @classmethod
-    def from_pretrained(cls, model_path: str):
-        """Load model from disk."""
-        model = cls(model_name=model_path, pretrained=True)
-        return model
 
 
 def create_processor(model_name: str = "microsoft/trocr-base-handwritten") -> TrOCRProcessor:
@@ -163,10 +169,9 @@ def setup_model_and_processor(
     processor = create_processor(model_name)
 
     # Create model
-    model = TrOCRForHTR(
+    model = TrOCRForHTR.create(
         model_name=model_name,
-        config=config,
-        pretrained=True,
+        htr_config=config,
     )
 
     # Move to device
@@ -195,7 +200,7 @@ def freeze_encoder(model: TrOCRForHTR):
     Args:
         model: TrOCR model
     """
-    for param in model.model.encoder.parameters():
+    for param in model.encoder.parameters():
         param.requires_grad = False
 
     print("Encoder frozen. Only decoder will be trained.")
@@ -208,7 +213,7 @@ def unfreeze_encoder(model: TrOCRForHTR):
     Args:
         model: TrOCR model
     """
-    for param in model.model.encoder.parameters():
+    for param in model.encoder.parameters():
         param.requires_grad = True
 
     print("Encoder unfrozen. Full model will be trained.")
@@ -217,7 +222,7 @@ def unfreeze_encoder(model: TrOCRForHTR):
 if __name__ == '__main__':
     # Test model creation
     print("Creating TrOCR model...")
-    model = TrOCRForHTR()
+    model = TrOCRForHTR.create()
 
     total_params = count_parameters(model)
     print(f"Total trainable parameters: {total_params:,}")

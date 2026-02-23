@@ -163,15 +163,10 @@ def main():
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"  Device: {device}")
 
-    model = TrOCRForHTR(
+    model = TrOCRForHTR.create(
         model_name=config.model_name,
-        pretrained=True,
     )
     
-    # Ensure the model has the HuggingFace config for trainer compatibility
-    if not hasattr(model, 'config') or not hasattr(model.config, 'to_json_string'):
-        model.config = model.model.config
-
     # Count parameters
     total_params = sum(p.numel() for p in model.parameters())
     trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)

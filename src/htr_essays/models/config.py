@@ -21,7 +21,8 @@ class TrainingConfig:
 
     # Training hyperparameters
     learning_rate: float = 5e-5
-    batch_size: int = 8  # Per GPU
+    batch_size: int = 8  # Per GPU batch size for training
+    eval_batch_size: int = 2  # Per GPU batch size for evaluation (smaller to reduce memory)
     num_epochs: int = 50
     warmup_steps: int = 500
     weight_decay: float = 0.01

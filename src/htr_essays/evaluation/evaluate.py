@@ -211,6 +211,26 @@ def main():
     print(f"\nTotal errors: {error_analysis['total_errors']}")
     print(f"Perfect predictions: {error_analysis['perfect_predictions']}")
 
+    if 'character_error_counts' in error_analysis:
+        char_counts = error_analysis['character_error_counts']
+        print("\nCharacter-level aggregate errors:")
+        print(
+            f"  S: {char_counts['substitutions']} | "
+            f"D: {char_counts['deletions']} | "
+            f"I: {char_counts['insertions']} | "
+            f"H: {char_counts['hits']}"
+        )
+
+    if 'word_error_counts' in error_analysis:
+        word_counts = error_analysis['word_error_counts']
+        print("Word-level aggregate errors:")
+        print(
+            f"  S: {word_counts['substitutions']} | "
+            f"D: {word_counts['deletions']} | "
+            f"I: {word_counts['insertions']} | "
+            f"H: {word_counts['hits']}"
+        )
+
     if 'swedish_char_analysis' in error_analysis:
         print("\nSwedish Character Analysis:")
         for char, stats in error_analysis['swedish_char_analysis'].items():

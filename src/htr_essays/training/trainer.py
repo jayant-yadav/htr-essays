@@ -127,20 +127,25 @@ class HTRTrainer(Trainer):
 
     def save_model(self, output_dir=None, _internal_call=False):
         """
-        Save the model using PyTorch format to avoid safetensors shared tensor issues.
+        Save model in Hugging Face format for checkpoint compatibility.
+
+        If the training model is wrapped (e.g., TrOCRForHTR), save the wrapped
+        VisionEncoderDecoderModel so checkpoints can be loaded directly with
+        VisionEncoderDecoderModel.from_pretrained(...).
         """
         if output_dir is None:
             output_dir = self.args.output_dir
 
         os.makedirs(output_dir, exist_ok=True)
 
-        # Save the model directly with torch.save to avoid safetensors
+        # Unwrap DDP/FSDP wrappers first
         model_to_save = self.model.module if hasattr(self.model, 'module') else self.model
-        torch.save(model_to_save.state_dict(), os.path.join(output_dir, 'pytorch_model.bin'))
 
-        # Save the config
-        if hasattr(model_to_save, 'config'):
-            model_to_save.config.save_pretrained(output_dir)
+        # Save underlying HF model when using TrOCRForHTR wrapper
+        hf_model = model_to_save.model if hasattr(model_to_save, 'model') else model_to_save
+
+        # Keep PyTorch .bin format for compatibility with current workflows
+        hf_model.save_pretrained(output_dir, safe_serialization=False)
 
         # Save the processor
         if hasattr(self, 'processor') and self.processor is not None:
@@ -240,7 +245,7 @@ def create_training_arguments(config) -> TrainingArguments:
         output_dir=config.output_dir,
         num_train_epochs=config.num_epochs,
         per_device_train_batch_size=config.batch_size,
-        per_device_eval_batch_size=config.batch_size,
+        per_device_eval_batch_size=config.eval_batch_size,  # Smaller batch size for evaluation
         learning_rate=config.learning_rate,
         weight_decay=config.weight_decay,
         warmup_steps=config.warmup_steps,

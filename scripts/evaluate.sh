@@ -1,16 +1,21 @@
-#!/bin/bash
-#
+#!/usr/bin/env bash
+#SBATCH -A naiss2026-4-110
+#SBATCH -p alvis
+#SBATCH -N 1
+#SBATCH --gpus-per-node=A40:4
+#SBATCH -t 1-00:00:00
+#SBATCH --output=logs/evaluate/%j.log
+
 # Evaluation script for HTR model
-#
 # Usage:
 #   bash scripts/evaluate.sh outputs/final_model
 #   bash scripts/evaluate.sh outputs/final_model test
 #
 
 # Get the directory where this script is located
-SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
-DATA_DIR="$(dirname "$PROJECT_DIR")/200essays"
+SCRIPT_DIR="/mimer/NOBACKUP/groups/studentessays/htr-essays/scripts"
+PROJECT_DIR="/mimer/NOBACKUP/groups/studentessays/htr-essays"
+DATA_DIR="/mimer/NOBACKUP/groups/studentessays/200essays"
 
 CHECKPOINT="${1:-outputs/final_model}"
 SPLIT="${2:-test}"
@@ -33,6 +38,8 @@ if [ ! -d "$CHECKPOINT" ]; then
     echo "ERROR: Checkpoint directory not found: $CHECKPOINT"
     exit 1
 fi
+
+module load poetry
 
 # Run evaluation
 cd "$PROJECT_DIR"

@@ -2,7 +2,7 @@
 Evaluation metrics for HTR model.
 """
 
-from typing import List, Dict, Tuple
+from typing import List, Dict
 import numpy as np
 import jiwer
 from collections import defaultdict
@@ -179,17 +179,33 @@ def analyze_errors(predictions: List[str], references: List[str]) -> Dict:
     Returns:
         Dict with error analysis
     """
-    # Character-level errors
-    char_substitutions = defaultdict(int)
-    char_deletions = defaultdict(int)
-    char_insertions = defaultdict(int)
+    # Aggregate error counts using current jiwer API (compute_measures was removed)
+    character_errors = {
+        'substitutions': 0,
+        'deletions': 0,
+        'insertions': 0,
+        'hits': 0,
+    }
+    word_errors = {
+        'substitutions': 0,
+        'deletions': 0,
+        'insertions': 0,
+        'hits': 0,
+    }
 
     for pred, ref in zip(predictions, references):
-        # Use jiwer to get transformations
-        ops = jiwer.compute_measures(ref, pred)
+        char_alignment = jiwer.process_characters(ref, pred)
+        word_alignment = jiwer.process_words(ref, pred)
 
-        # Count errors (simplified - proper implementation would track specific substitutions)
-        # This is a placeholder for demonstration
+        character_errors['substitutions'] += int(getattr(char_alignment, 'substitutions', 0))
+        character_errors['deletions'] += int(getattr(char_alignment, 'deletions', 0))
+        character_errors['insertions'] += int(getattr(char_alignment, 'insertions', 0))
+        character_errors['hits'] += int(getattr(char_alignment, 'hits', 0))
+
+        word_errors['substitutions'] += int(getattr(word_alignment, 'substitutions', 0))
+        word_errors['deletions'] += int(getattr(word_alignment, 'deletions', 0))
+        word_errors['insertions'] += int(getattr(word_alignment, 'insertions', 0))
+        word_errors['hits'] += int(getattr(word_alignment, 'hits', 0))
 
     # Find most difficult characters (Swedish specific)
     swedish_chars = ['å', 'ä', 'ö', 'Å', 'Ä', 'Ö']
@@ -210,6 +226,8 @@ def analyze_errors(predictions: List[str], references: List[str]) -> Dict:
         'swedish_char_analysis': swedish_char_errors,
         'total_errors': len([p for p, r in zip(predictions, references) if p != r]),
         'perfect_predictions': len([p for p, r in zip(predictions, references) if p == r]),
+        'character_error_counts': character_errors,
+        'word_error_counts': word_errors,
     }
 
 

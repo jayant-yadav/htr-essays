@@ -4,7 +4,7 @@
 #SBATCH -N 1
 #SBATCH --gpus-per-node=A40:4
 #SBATCH -t 1-00:00:00
-#SBATCH --output=logs/%j.log
+#SBATCH --output=logs/train/%j.log
 
 #
 # Training script for HTR model on 4 A40 GPUs

@@ -21,38 +21,38 @@ A complete Handwritten Text Recognition (HTR) pipeline for transcribing Swedish 
 
 Install dependencies:
 
-\`\`\`bash
+```bash
 cd htr-essays
 pip install -e .
-\`\`\`
+```
 
 ## Quick Start
 
 ### 1. Create Data Splits
 
-\`\`\`bash
+```bash
 cd /mimer/NOBACKUP/groups/studentessays
 python -c "from htr_essays.data.dataset import create_data_splits; create_data_splits('200essays/json_full.json', 'htr-essays/data_splits.json')"
-\`\`\`
+```
 
 ### 2. Train the Model
 
-\`\`\`bash
+```bash
 cd htr-essays
 bash scripts/train.sh
-\`\`\`
+```
 
 ### 3. Evaluate
 
-\`\`\`bash
+```bash
 bash scripts/evaluate.sh outputs/final_model test
-\`\`\`
+```
 
 ### 4. Inference
 
-\`\`\`bash
+```bash
 bash scripts/infer.sh outputs/final_model --image path/to/essay.jpg --visualize
-\`\`\`
+```
 
 ## Performance Targets
 
