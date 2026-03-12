@@ -42,9 +42,6 @@ def parse_args():
     parser.add_argument('--viz_dir', type=str, default='visualizations', help='Directory for visualizations')
     parser.add_argument('--num_beams', type=int, default=4, help='Number of beams for beam search')
     parser.add_argument('--device', type=str, default='cuda', help='Device (cuda or cpu)')
-    parser.add_argument('--segmentation_method', type=str, default='contours',
-                       choices=['contours', 'projection'], help='Line segmentation method')
-
     return parser.parse_args()
 
 
@@ -53,7 +50,6 @@ def infer_single_image(
     predictor: HTRPredictor,
     segmenter: LineSegmenter,
     use_segmentation: bool = True,
-    segmentation_method: str = 'contours',
 ) -> Dict:
     """
     Run inference on a single image.
@@ -63,7 +59,7 @@ def infer_single_image(
         predictor: HTR predictor
         segmenter: Line segmenter
         use_segmentation: Whether to use automated segmentation
-        segmentation_method: Method for segmentation
+        Uses horizontal projection segmentation
 
     Returns:
         Dict with predictions
@@ -73,7 +69,7 @@ def infer_single_image(
 
     # Segment lines
     if use_segmentation:
-        bboxes = segmenter.segment(image, method=segmentation_method)
+        bboxes = segmenter.segment(image)
     else:
         # Use whole image as single bbox
         img_width, img_height = image.size
@@ -166,7 +162,6 @@ def main():
                 predictor=predictor,
                 segmenter=segmenter,
                 use_segmentation=True,
-                segmentation_method=args.segmentation_method,
             )
 
             all_results.append(result)
