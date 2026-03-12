@@ -2,7 +2,7 @@
 #SBATCH -A naiss2026-4-110
 #SBATCH -p alvis
 #SBATCH -N 1
-#SBATCH --gpus-per-node=A40:4
+#SBATCH --gpus-per-node=A100:4
 #SBATCH -t 1-00:00:00
 #SBATCH --output=logs/train/%j.log
 
@@ -25,6 +25,9 @@ NUM_GPUS=4
 EPOCHS=50
 BATCH_SIZE=8
 OUTPUT_DIR="${PROJECT_DIR}/outputs"
+RUN_ID="${SLURM_JOB_ID:-$(date +%Y%m%d_%H%M%S)}"
+LOG_FILE_NAME="${RUN_ID}.log"
+LOSS_CURVE_PATH="${PROJECT_DIR}/logs/train/${RUN_ID}.png"
 
 # Parse arguments
 while [[ $# -gt 0 ]]; do
@@ -66,6 +69,8 @@ echo "GPUs: $NUM_GPUS"
 echo "Epochs: $EPOCHS"
 echo "Batch size per GPU: $BATCH_SIZE"
 echo "Output directory: $OUTPUT_DIR"
+echo "Log file name: $LOG_FILE_NAME"
+echo "Loss curve path: $LOSS_CURVE_PATH"
 echo "Debug mode: ${DEBUG:-No}"
 echo "=========================================="
 echo
@@ -107,7 +112,8 @@ if [ $NUM_GPUS -gt 1 ]; then
         --output_dir $OUTPUT_DIR \
         --data_dir "$DATA_DIR" \
         --annotations_file "$DATA_DIR/json_full.json" \
-        --split_file "$SPLIT_FILE"
+        --split_file "$SPLIT_FILE" \
+        --loss_curve_path "$LOSS_CURVE_PATH"
 else
     echo "Launching single-GPU training..."
     poetry run python3 -m htr_essays.training.train \
@@ -117,7 +123,8 @@ else
         --output_dir $OUTPUT_DIR \
         --data_dir "$DATA_DIR" \
         --annotations_file "$DATA_DIR/json_full.json" \
-        --split_file "$SPLIT_FILE"
+        --split_file "$SPLIT_FILE" \
+        --loss_curve_path "$LOSS_CURVE_PATH"
 fi
 
 echo

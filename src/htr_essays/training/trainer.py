@@ -7,13 +7,18 @@ from typing import Dict, List, Optional
 import numpy as np
 import torch
 from transformers import (
-    Trainer,
-    TrainingArguments,
+    Seq2SeqTrainer,
+    Seq2SeqTrainingArguments,
     EarlyStoppingCallback,
 )
 from transformers.trainer_callback import TrainerCallback
 
 import jiwer
+from htr_essays.evaluation.metrics import compute_all_metrics
+
+
+def format_error_rate(value: float) -> str:
+    return f"{value:.4f} ({value * 100:.2f}%)"
 
 
 def compute_cer(pred_str: str, label_str: str) -> float:
@@ -93,8 +98,12 @@ def create_compute_metrics_fn(processor):
         if isinstance(predictions, tuple):
             predictions = predictions[0]
 
-        # Get predicted token IDs
-        pred_ids = np.argmax(predictions, axis=-1)
+        # Predictions can be either generated token IDs [batch, seq_len]
+        # or decoder logits [batch, seq_len, vocab_size].
+        if predictions.ndim == 3:
+            pred_ids = np.argmax(predictions, axis=-1)
+        else:
+            pred_ids = predictions
 
         # Decode to text
         pred_strs = processor.batch_decode(pred_ids, skip_special_tokens=True)
@@ -104,8 +113,8 @@ def create_compute_metrics_fn(processor):
         label_ids[label_ids == -100] = processor.tokenizer.pad_token_id
         label_strs = processor.batch_decode(label_ids, skip_special_tokens=True)
 
-        # Compute metrics
-        metrics = compute_metrics_batch(pred_strs, label_strs)
+        # Compute corpus-level headline metrics plus diagnostics
+        metrics = compute_all_metrics(pred_strs, label_strs)
 
         # Return with 'eval_' prefix
         return {f'eval_{k}': v for k, v in metrics.items()}
@@ -113,7 +122,7 @@ def create_compute_metrics_fn(processor):
     return compute_metrics_htr
 
 
-class HTRTrainer(Trainer):
+class HTRTrainer(Seq2SeqTrainer):
     """
     Custom Trainer for HTR.
 
@@ -168,9 +177,9 @@ class CERMetricCallback(TrainerCallback):
             if 'eval_cer' in metrics:
                 print(f"\n{'='*50}")
                 print(f"Evaluation Results (Step {state.global_step}):")
-                print(f"  CER: {metrics['eval_cer']:.4f}")
+                print(f"  CER: {format_error_rate(float(metrics['eval_cer']))}")
                 if 'eval_wer' in metrics:
-                    print(f"  WER: {metrics['eval_wer']:.4f}")
+                    print(f"  WER: {format_error_rate(float(metrics['eval_wer']))}")
                 if 'eval_loss' in metrics:
                     print(f"  Loss: {metrics['eval_loss']:.4f}")
                 print(f"{'='*50}\n")
@@ -181,7 +190,7 @@ def setup_trainer(
     processor,
     train_dataset,
     eval_dataset,
-    training_args: TrainingArguments,
+    training_args: Seq2SeqTrainingArguments,
     compute_metrics_fn=None,
 ) -> HTRTrainer:
     """
@@ -231,7 +240,7 @@ def setup_trainer(
     return trainer
 
 
-def create_training_arguments(config) -> TrainingArguments:
+def create_training_arguments(config) -> Seq2SeqTrainingArguments:
     """
     Create TrainingArguments from config.
 
@@ -239,9 +248,9 @@ def create_training_arguments(config) -> TrainingArguments:
         config: TrainingConfig instance
 
     Returns:
-        TrainingArguments
+        Seq2SeqTrainingArguments
     """
-    args = TrainingArguments(
+    args = Seq2SeqTrainingArguments(
         output_dir=config.output_dir,
         num_train_epochs=config.num_epochs,
         per_device_train_batch_size=config.batch_size,
@@ -266,6 +275,9 @@ def create_training_arguments(config) -> TrainingArguments:
         lr_scheduler_type=config.lr_scheduler_type,
         seed=config.seed,
         ddp_find_unused_parameters=True,  # Allow unused parameters in distributed training
+        predict_with_generate=True,
+        generation_max_length=config.max_length,
+        generation_num_beams=4,
     )
 
     return args
@@ -281,5 +293,5 @@ if __name__ == '__main__':
 
     print(f"Prediction: '{pred}'")
     print(f"Reference: '{ref}'")
-    print(f"CER: {cer:.4f}")
-    print(f"WER: {wer:.4f}")
+    print(f"CER: {format_error_rate(cer)}")
+    print(f"WER: {format_error_rate(wer)}")

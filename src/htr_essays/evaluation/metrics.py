@@ -8,6 +8,10 @@ import jiwer
 from collections import defaultdict
 
 
+def format_error_rate(value: float) -> str:
+    return f"{value:.4f} ({value * 100:.2f}%)"
+
+
 def compute_cer(prediction: str, reference: str) -> float:
     """
     Compute Character Error Rate (CER).
@@ -44,6 +48,42 @@ def compute_wer(prediction: str, reference: str) -> float:
         return 1.0 if len(prediction.split()) > 0 else 0.0
 
     return jiwer.wer(reference, prediction)
+
+
+def compute_corpus_cer(predictions: List[str], references: List[str]) -> float:
+    """
+    Compute corpus-level CER over all samples.
+
+    Args:
+        predictions: List of predicted strings
+        references: List of reference strings
+
+    Returns:
+        Corpus-level CER
+    """
+    if len(predictions) != len(references):
+        raise ValueError(f"Length mismatch: {len(predictions)} predictions vs {len(references)} references")
+    if len(references) == 0:
+        return 0.0
+    return float(jiwer.cer(references, predictions))
+
+
+def compute_corpus_wer(predictions: List[str], references: List[str]) -> float:
+    """
+    Compute corpus-level WER over all samples.
+
+    Args:
+        predictions: List of predicted strings
+        references: List of reference strings
+
+    Returns:
+        Corpus-level WER
+    """
+    if len(predictions) != len(references):
+        raise ValueError(f"Length mismatch: {len(predictions)} predictions vs {len(references)} references")
+    if len(references) == 0:
+        return 0.0
+    return float(jiwer.wer(references, predictions))
 
 
 def compute_normalized_cer(prediction: str, reference: str) -> float:
@@ -114,24 +154,39 @@ def compute_all_metrics(predictions: List[str], references: List[str]) -> Dict[s
     if len(predictions) != len(references):
         raise ValueError(f"Length mismatch: {len(predictions)} predictions vs {len(references)} references")
 
-    # Compute individual metrics
+    # Compute per-sample metrics for distribution diagnostics
     cers = [compute_cer(pred, ref) for pred, ref in zip(predictions, references)]
     wers = [compute_wer(pred, ref) for pred, ref in zip(predictions, references)]
     norm_cers = [compute_normalized_cer(pred, ref) for pred, ref in zip(predictions, references)]
     norm_wers = [compute_normalized_wer(pred, ref) for pred, ref in zip(predictions, references)]
 
+    # Compute corpus-level headline metrics
+    corpus_cer = compute_corpus_cer(predictions, references)
+    corpus_wer = compute_corpus_wer(predictions, references)
+
+    pred_norm = [
+        pred.lower().replace('.', '').replace(',', '').replace('!', '').replace('?', '')
+        for pred in predictions
+    ]
+    ref_norm = [
+        ref.lower().replace('.', '').replace(',', '').replace('!', '').replace('?', '')
+        for ref in references
+    ]
+    corpus_normalized_cer = compute_corpus_cer(pred_norm, ref_norm)
+    corpus_normalized_wer = compute_corpus_wer(pred_norm, ref_norm)
+
     # Compute sequence accuracy
     seq_acc = compute_sequence_accuracy(predictions, references)
 
     return {
-        'cer': np.mean(cers),
-        'cer_std': np.std(cers),
-        'cer_median': np.median(cers),
-        'wer': np.mean(wers),
-        'wer_std': np.std(wers),
-        'wer_median': np.median(wers),
-        'normalized_cer': np.mean(norm_cers),
-        'normalized_wer': np.mean(norm_wers),
+        'cer': corpus_cer,
+        'cer_std': float(np.std(cers)),
+        'cer_median': float(np.median(cers)),
+        'wer': corpus_wer,
+        'wer_std': float(np.std(wers)),
+        'wer_median': float(np.median(wers)),
+        'normalized_cer': corpus_normalized_cer,
+        'normalized_wer': corpus_normalized_wer,
         'sequence_accuracy': seq_acc,
         'total_samples': len(predictions),
     }
@@ -249,15 +304,15 @@ def format_metrics_report(metrics: Dict) -> str:
 
     # Main metrics
     report.append("Character Error Rate (CER):")
-    report.append(f"  Mean: {metrics['cer']*100:.2f}%")
-    report.append(f"  Std:  {metrics['cer_std']*100:.2f}%")
-    report.append(f"  Median: {metrics['cer_median']*100:.2f}%")
+    report.append(f"  Mean: {format_error_rate(metrics['cer'])}")
+    report.append(f"  Std:  {format_error_rate(metrics['cer_std'])}")
+    report.append(f"  Median: {format_error_rate(metrics['cer_median'])}")
     report.append("")
 
     report.append("Word Error Rate (WER):")
-    report.append(f"  Mean: {metrics['wer']*100:.2f}%")
-    report.append(f"  Std:  {metrics['wer_std']*100:.2f}%")
-    report.append(f"  Median: {metrics['wer_median']*100:.2f}%")
+    report.append(f"  Mean: {format_error_rate(metrics['wer'])}")
+    report.append(f"  Std:  {format_error_rate(metrics['wer_std'])}")
+    report.append(f"  Median: {format_error_rate(metrics['wer_median'])}")
     report.append("")
 
     report.append("Normalized Metrics (case-insensitive, no punctuation):")

@@ -4,7 +4,7 @@ A complete Handwritten Text Recognition (HTR) pipeline for transcribing Swedish 
 
 ## Features
 
-- **Pre-trained TrOCR Model**: Fine-tuned `microsoft/trocr-base-handwritten` for Swedish handwriting
+- **Pre-trained TrOCR Model**: Fine-tuned `microsoft/trocr-large-handwritten` for Swedish handwriting
 - **Automated Line Segmentation**: Open CV-based line detection for unseen essays
 - **Multi-GPU Training**: Optimized for 4xA100 GPUs with distributed training
 - **Comprehensive Evaluation**: CER, WER, and per-year metrics with error analysis

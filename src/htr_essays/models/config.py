@@ -11,7 +11,7 @@ class TrainingConfig:
     """Configuration for model training."""
 
     # Model settings
-    model_name: str = "microsoft/trocr-base-handwritten"
+    model_name: str = "microsoft/trocr-large-handwritten"
     pretrained: bool = True
 
     # Data settings
@@ -88,7 +88,7 @@ class ModelConfig:
     """Configuration for TrOCR model."""
 
     # Architecture
-    encoder_model: str = "microsoft/trocr-base-handwritten"
+    encoder_model: str = "microsoft/trocr-large-handwritten"
     decoder_model: Optional[str] = None  # Use same as encoder if None
 
     # Image processing

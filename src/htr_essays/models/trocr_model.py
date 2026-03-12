@@ -47,7 +47,7 @@ class TrOCRForHTR(VisionEncoderDecoderModel):
     @classmethod
     def create(
         cls,
-        model_name: str = "microsoft/trocr-base-handwritten",
+        model_name: str = "microsoft/trocr-large-handwritten",
         htr_config: Optional[ModelConfig] = None,
     ) -> "TrOCRForHTR":
         """
@@ -112,6 +112,7 @@ class TrOCRForHTR(VisionEncoderDecoderModel):
         max_length: int = 128,
         num_beams: int = 4,
         early_stopping: bool = True,
+        **kwargs,
     ) -> torch.Tensor:
         """
         Generate text predictions.
@@ -121,21 +122,23 @@ class TrOCRForHTR(VisionEncoderDecoderModel):
             max_length: Maximum sequence length
             num_beams: Number of beams for beam search
             early_stopping: Whether to stop when all beams finish
+            **kwargs: Extra generation kwargs from trainer/runtime
 
         Returns:
             Generated token IDs [batch_size, seq_len]
         """
         outputs = super().generate(
-            pixel_values,
+            pixel_values=pixel_values,
             max_length=max_length,
             num_beams=num_beams,
             early_stopping=early_stopping,
+            **kwargs,
         )
 
         return outputs
 
 
-def create_processor(model_name: str = "microsoft/trocr-base-handwritten") -> TrOCRProcessor:
+def create_processor(model_name: str = "microsoft/trocr-large-handwritten") -> TrOCRProcessor:
     """
     Create TrOCR processor for image and text processing.
 
@@ -150,7 +153,7 @@ def create_processor(model_name: str = "microsoft/trocr-base-handwritten") -> Tr
 
 
 def setup_model_and_processor(
-    model_name: str = "microsoft/trocr-base-handwritten",
+    model_name: str = "microsoft/trocr-large-handwritten",
     config: Optional[ModelConfig] = None,
     device: str = "cuda",
 ) -> tuple:

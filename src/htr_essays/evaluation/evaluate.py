@@ -24,6 +24,7 @@ from htr_essays.evaluation.metrics import (
     compute_per_year_metrics,
     analyze_errors,
     format_metrics_report,
+    format_error_rate,
 )
 
 
@@ -198,8 +199,8 @@ def main():
     for year, year_metrics in sorted(per_year_metrics.items()):
         print(f"\n{year}:")
         print(f"  Samples: {year_metrics['total_samples']}")
-        print(f"  CER: {year_metrics['cer']*100:.2f}%")
-        print(f"  WER: {year_metrics['wer']*100:.2f}%")
+        print(f"  CER: {format_error_rate(year_metrics['cer'])}")
+        print(f"  WER: {format_error_rate(year_metrics['wer'])}")
         print(f"  Sequence Accuracy: {year_metrics['sequence_accuracy']*100:.2f}%")
 
     # Analyze errors
