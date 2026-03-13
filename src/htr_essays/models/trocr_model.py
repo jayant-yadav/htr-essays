@@ -80,10 +80,10 @@ class TrOCRForHTR(VisionEncoderDecoderModel):
 
     def forward(
         self,
-        pixel_values: torch.Tensor,
+        pixel_values: Optional[torch.Tensor] = None,
         labels: Optional[torch.Tensor] = None,
         **kwargs
-    ) -> Dict[str, torch.Tensor]:
+    ):
         """
         Forward pass.
 
@@ -93,18 +93,13 @@ class TrOCRForHTR(VisionEncoderDecoderModel):
             **kwargs: Additional arguments to pass to the model
 
         Returns:
-            Dict with 'loss' and 'logits'
+            ModelOutput from VisionEncoderDecoderModel
         """
-        outputs = super().forward(
+        return super().forward(
             pixel_values=pixel_values,
             labels=labels,
             **kwargs
         )
-
-        return {
-            'loss': outputs.loss if labels is not None else None,
-            'logits': outputs.logits,
-        }
 
     def generate(
         self,

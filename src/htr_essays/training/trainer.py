@@ -98,6 +98,12 @@ def create_compute_metrics_fn(processor):
         if isinstance(predictions, tuple):
             predictions = predictions[0]
 
+        predictions = np.asarray(predictions)
+        label_ids = np.asarray(label_ids)
+
+        pad_token_id = processor.tokenizer.pad_token_id
+        vocab_size = int(getattr(processor.tokenizer, 'vocab_size', len(processor.tokenizer)))
+
         # Predictions can be either generated token IDs [batch, seq_len]
         # or decoder logits [batch, seq_len, vocab_size].
         if predictions.ndim == 3:
@@ -105,12 +111,23 @@ def create_compute_metrics_fn(processor):
         else:
             pred_ids = predictions
 
+        # Sanitize token IDs before decoding
+        pred_ids = np.nan_to_num(pred_ids, nan=pad_token_id, posinf=pad_token_id, neginf=pad_token_id)
+        if not np.issubdtype(pred_ids.dtype, np.integer):
+            pred_ids = np.rint(pred_ids)
+        pred_ids = pred_ids.astype(np.int64, copy=False)
+        pred_ids[(pred_ids == -100) | (pred_ids < 0) | (pred_ids >= vocab_size)] = pad_token_id
+
         # Decode to text
         pred_strs = processor.batch_decode(pred_ids, skip_special_tokens=True)
 
         # Decode labels (replace -100 with pad token)
-        label_ids = label_ids.copy()
-        label_ids[label_ids == -100] = processor.tokenizer.pad_token_id
+        label_ids = np.nan_to_num(label_ids, nan=pad_token_id, posinf=pad_token_id, neginf=pad_token_id)
+        if not np.issubdtype(label_ids.dtype, np.integer):
+            label_ids = np.rint(label_ids)
+        label_ids = label_ids.astype(np.int64, copy=False)
+        label_ids[label_ids == -100] = pad_token_id
+        label_ids[(label_ids < 0) | (label_ids >= vocab_size)] = pad_token_id
         label_strs = processor.batch_decode(label_ids, skip_special_tokens=True)
 
         # Compute corpus-level headline metrics plus diagnostics
