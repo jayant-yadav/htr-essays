@@ -71,7 +71,7 @@ def parse_args():
     parser.add_argument(
         "--yolo_iou",
         type=float,
-        default=0.5,
+        default=0.45,
         help="YOLO IoU threshold for NMS",
     )
     return parser.parse_args()

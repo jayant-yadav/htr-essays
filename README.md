@@ -39,19 +39,23 @@ python -c "from htr_essays.data.dataset import create_data_splits; create_data_s
 
 ```bash
 cd htr-essays
-bash scripts/train.sh
+sbatch scripts/train.sh
 ```
 
 ### 3. Evaluate
 
 ```bash
-bash scripts/evaluate.sh outputs/final_model test
+sbatch scripts/evaluate.sh outputs/final_model test
 ```
 
 ### 4. Inference
 
 ```bash
-bash scripts/infer.sh outputs/final_model --image path/to/essay.jpg --visualize
+sbatch scripts/infer.sh outputs/final_model --image path/to/essay.jpg --visualize
+```
+OR
+```bash
+sbatch scripts/infer.sh outputs/final_model --image_dir path/to/images/
 ```
 
 ## Performance Targets

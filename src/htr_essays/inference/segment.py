@@ -25,7 +25,7 @@ class LineSegmenter:
         self,
         model_path: Optional[str] = None,
         conf_threshold: float = 0.25,
-        iou_threshold: float = 0.5,
+        iou_threshold: float = 0.45,
         device: str = "cuda",
     ):
         resolved_model_path = Path(model_path) if model_path else _default_yolo_model_path()
