@@ -4,3 +4,5 @@ slurm*.out
 outputs
 __pycache__
 visualizations
+evaluation_results
+predictions.json
